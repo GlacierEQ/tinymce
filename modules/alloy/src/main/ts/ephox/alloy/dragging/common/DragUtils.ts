@@ -1,13 +1,14 @@
-import { Optional } from '@ephox/katamari';
-import { EventArgs, Height, SugarPosition, Width } from '@ephox/sugar';
+import type { Optional } from '@ephox/katamari';
+import { type EventArgs, Height, type SugarPosition, Width } from '@ephox/sugar';
 
-import { AlloyComponent } from '../../api/component/ComponentApi';
+import type { AlloyComponent } from '../../api/component/ComponentApi';
 import * as AlloyEvents from '../../api/events/AlloyEvents';
 import * as SystemEvents from '../../api/events/SystemEvents';
-import { EventFormat } from '../../events/SimulatedEvent';
+import type { EventFormat } from '../../events/SimulatedEvent';
 import * as Snappables from '../snap/Snappables';
+
 import * as BlockerUtils from './BlockerUtils';
-import { DraggingConfig, DraggingState, DragModeDeltas, DragStartData } from './DraggingTypes';
+import type { DraggingConfig, DraggingState, DragModeDeltas, DragStartData } from './DraggingTypes';
 import * as DragMovement from './DragMovement';
 
 type EventsFunc<C extends DraggingConfig<E>, A extends EventFormat, E> = (dragConfig: C, dragState: DraggingState, updateStartState: (comp: AlloyComponent) => void) => Array<AlloyEvents.AlloyEventKeyAndHandler<A>>;
@@ -38,7 +39,13 @@ const stop = <E>(component: AlloyComponent, blocker: Optional<AlloyComponent>, d
 
 const handlers = <C extends DraggingConfig<E>, A extends EventFormat, E>(events: EventsFunc<C, A, E>) => (dragConfig: C, dragState: DraggingState): AlloyEvents.AlloyEventRecord => {
   const updateStartState = (comp: AlloyComponent) => {
+    const isBeingDragged = dragState.getStartData().isSome();
     dragState.setStartData(calcStartData(dragConfig, comp));
+
+    if (!isBeingDragged) {
+      const target = dragConfig.getTarget(comp.element);
+      dragConfig.onDragStart(comp, target);
+    }
   };
 
   return AlloyEvents.derive([

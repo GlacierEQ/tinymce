@@ -3,20 +3,21 @@ import { Arr, Cell, Throttler, Type } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 import { Css, DomEvent, SugarElement, SugarPosition, SugarShadowDom } from '@ephox/sugar';
 
-import { EventUtilsEvent } from 'tinymce/core/api/dom/EventUtils';
-import Editor from 'tinymce/core/api/Editor';
-import { EditorUiApi } from 'tinymce/core/api/ui/Ui';
+import type { EventUtilsEvent } from 'tinymce/core/api/dom/EventUtils';
+import type Editor from 'tinymce/core/api/Editor';
+import type { EditorUiApi } from 'tinymce/core/api/ui/Ui';
 
 import * as Events from '../api/Events';
 import * as Options from '../api/Options';
-import { UiFactoryBackstage } from '../backstage/Backstage';
-import { ModeRenderInfo, RenderArgs, RenderUiConfig } from '../Render';
+import type { UiFactoryBackstage } from '../backstage/Backstage';
+import type { ModeRenderInfo, RenderArgs, RenderUiConfig } from '../Render';
 import OuterContainer from '../ui/general/OuterContainer';
 import { identifyMenus } from '../ui/menus/menubar/Integration';
 import { iframe as loadIframeSkin } from '../ui/skin/Loader';
 import * as UiState from '../UiState';
+
 import { setToolbar } from './Toolbars';
-import { ReadyUiReferences } from './UiReferences';
+import type { ReadyUiReferences } from './UiReferences';
 
 const detection = PlatformDetection.detect();
 const isiOS12 = detection.os.isiOS() && detection.os.version.major <= 12;
@@ -114,7 +115,13 @@ const render = (editor: Editor, uiRefs: ReadyUiReferences, rawUiConfig: RenderUi
       rawUiConfig.sidebar,
       Options.getSidebarShow(editor)
     );
-  });
+
+    OuterContainer.setViews(
+      outerContainer,
+      rawUiConfig.views,
+      Options.getViewShow(editor)
+    );
+  }, true);
 
   // TINY-10343: Using `SkinLoaded` instead of `PostRender` because if the skin loading takes too long you run in to rendering problems since things are measured before the CSS is being applied
   editor.on('SkinLoaded', () => {
@@ -129,8 +136,6 @@ const render = (editor: Editor, uiRefs: ReadyUiReferences, rawUiConfig: RenderUi
       outerContainer,
       identifyMenus(editor, rawUiConfig)
     );
-
-    OuterContainer.setViews(outerContainer, rawUiConfig.views);
 
     setupEvents(editor, uiRefs);
   });

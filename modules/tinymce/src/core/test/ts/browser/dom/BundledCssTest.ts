@@ -4,8 +4,8 @@ import { Insert, Remove, SelectorFilter, SugarBody, SugarElement, SugarHead, Sug
 import { McEditor, TinyDom } from '@ephox/wrap-mcagar';
 import { assert } from 'chai';
 
-import Editor from 'tinymce/core/api/Editor';
-import { TinyMCE } from 'tinymce/core/api/Tinymce';
+import type Editor from 'tinymce/core/api/Editor';
+import type { TinyMCE } from 'tinymce/core/api/Tinymce';
 
 declare const tinymce: TinyMCE;
 
@@ -226,7 +226,7 @@ describe('browser.tinymce.core.dom.BundledCssTest', () => {
                         assert.includeMembers(
                           iframeStyles,
                           [
-                            contentCss,
+                            `content/${contentCss}/content.css`,
                             `ui/${skin}/content.css`
                           ],
                           'iframe style tags'

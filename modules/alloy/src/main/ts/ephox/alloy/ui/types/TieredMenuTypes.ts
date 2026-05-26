@@ -1,13 +1,15 @@
-import { Optional } from '@ephox/katamari';
+import type { Optional } from '@ephox/katamari';
 
-import { AlloyBehaviourRecord } from '../../api/behaviour/Behaviour';
-import { AlloyComponent } from '../../api/component/ComponentApi';
-import { SketchBehaviours } from '../../api/component/SketchBehaviours';
-import { AlloySpec, RawDomSchema } from '../../api/component/SpecTypes';
-import { SingleSketch, SingleSketchDetail, SingleSketchSpec } from '../../api/ui/Sketcher';
-import { LayeredItemTrigger } from '../../menu/layered/LayeredState';
-import { ItemDataTuple } from './ItemTypes';
-import { MenuSpec } from './MenuTypes';
+import type { AlloyBehaviourRecord } from '../../api/behaviour/Behaviour';
+import type { AlloyComponent } from '../../api/component/ComponentApi';
+import type { SketchBehaviours } from '../../api/component/SketchBehaviours';
+import type { AlloySpec, RawDomSchema } from '../../api/component/SpecTypes';
+import type { SingleSketch, SingleSketchDetail, SingleSketchSpec } from '../../api/ui/Sketcher';
+import type { KeyHandlerApi } from '../../keying/KeyingModeTypes';
+import type { LayeredItemTrigger } from '../../menu/layered/LayeredState';
+
+import type { ItemDataTuple } from './ItemTypes';
+import type { MenuSpec } from './MenuTypes';
 
 export interface TieredMenuDetail extends SingleSketchDetail {
   uid: string;
@@ -29,6 +31,8 @@ export interface TieredMenuDetail extends SingleSketchDetail {
   };
 
   onEscape: (comp: AlloyComponent, item: AlloyComponent) => Optional<boolean>;
+  onTab: KeyHandlerApi;
+  onShiftTab: KeyHandlerApi;
   onExecute: (comp: AlloyComponent, item: AlloyComponent) => Optional<boolean>;
   onOpenMenu: (comp: AlloyComponent, menu: AlloyComponent) => void;
   onOpenSubmenu: (comp: AlloyComponent, item: AlloyComponent, activeMenu: AlloyComponent, triggeringPath: string[]) => void;
@@ -54,6 +58,8 @@ export interface TieredMenuSpec extends SingleSketchSpec {
 
   onEscape: (comp: AlloyComponent, item: AlloyComponent) => Optional<boolean>;
   onExecute: (comp: AlloyComponent, item: AlloyComponent) => Optional<boolean>;
+  onTab?: KeyHandlerApi;
+  onShiftTab?: KeyHandlerApi;
   onOpenMenu: (comp: AlloyComponent, menu: AlloyComponent) => void;
   onOpenSubmenu: (comp: AlloyComponent, item: AlloyComponent, activeMenu: AlloyComponent, triggeringPath: string[]) => void;
   onCollapseMenu?: (comp: AlloyComponent, item: AlloyComponent, activeMenu: AlloyComponent) => void;

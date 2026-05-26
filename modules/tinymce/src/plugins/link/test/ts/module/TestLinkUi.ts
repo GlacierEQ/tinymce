@@ -1,10 +1,10 @@
 import { FocusTools, Mouse, UiControls, UiFinder, Waiter } from '@ephox/agar';
 import { Obj } from '@ephox/katamari';
-import { Attribute, Class, SugarBody, SugarDocument, SugarElement, Traverse, Value } from '@ephox/sugar';
+import { Attribute, Class, SugarBody, SugarDocument, type SugarElement, Traverse, Value } from '@ephox/sugar';
 import { TinyAssertions, TinyUiActions } from '@ephox/wrap-mcagar';
 import { assert } from 'chai';
 
-import Editor from 'tinymce/core/api/Editor';
+import type Editor from 'tinymce/core/api/Editor';
 
 const doc = SugarDocument.getDocument();
 
@@ -12,7 +12,7 @@ const labels = {
   href: 'URL',
   text: 'Text to display',
   title: 'Title',
-  target: 'Open link in...',
+  target: 'Open link in…',
   linklist: 'Link list'
 };
 
@@ -22,7 +22,7 @@ const pOpenLinkDialog = async (editor: Editor): Promise<void> => {
 };
 
 const clickOnConfirmDialog = (editor: Editor, state: boolean): void => {
-  TinyUiActions.clickOnUi(editor, '[role="dialog"].tox-confirm-dialog button:contains("' + (state ? 'Yes' : 'No') + '")');
+  TinyUiActions.clickOnUi(editor, '[role="alertdialog"].tox-confirm-dialog button:contains("' + (state ? 'Yes' : 'No') + '")');
 };
 
 const getInput = (labelText: string) =>
@@ -63,7 +63,7 @@ const pWaitForDialogClose = (): Promise<void> => Waiter.pTryUntil(
 
 const pWaitForConfirmClose = (): Promise<void> => Waiter.pTryUntil(
   'Waiting for confirm dialog to go away',
-  () => UiFinder.notExists(SugarBody.body(), '[role="dialog"].tox-confirm-dialog')
+  () => UiFinder.notExists(SugarBody.body(), '[role="alertdialog"].tox-confirm-dialog')
 );
 
 const pClickSave = async (editor: Editor): Promise<void> => {

@@ -1,10 +1,11 @@
-import { AddEventsBehaviour, AlloyComponent, AlloyEvents, Behaviour, Disabling, FormField, GuiFactory, Input, Keying, NativeEvents, SketchSpec } from '@ephox/alloy';
-import { InlineContent } from '@ephox/bridge';
-import { Cell, Fun, Optional, Singleton, Strings } from '@ephox/katamari';
+import { AddEventsBehaviour, type AlloyComponent, AlloyEvents, Behaviour, Disabling, FormField, GuiFactory, Input, Keying, NativeEvents, type SketchSpec } from '@ephox/alloy';
+import type { InlineContent } from '@ephox/bridge';
+import { Cell, Fun, Optional, type Singleton, Strings } from '@ephox/katamari';
 
-import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
+import type { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import * as UiState from '../../UiState';
 import { onContextFormControlDetached, onControlAttached } from '../controls/Controls';
+
 import * as ContextFormApi from './ContextFormApi';
 import * as ContextFormGroup from './ContextFormGroup';
 
@@ -15,7 +16,7 @@ export const renderContextFormSliderInput = (
   valueState: Singleton.Value<number>
 ): SketchSpec => {
   const editorOffCell = Cell(Fun.noop);
-  const getApi = (comp: AlloyComponent) => ContextFormApi.getFormApi<number>(comp, valueState);
+  const getApi = (comp: AlloyComponent) => ContextFormApi.getFormParentApi(comp, valueState);
 
   const pLabel = ctx.label.map((label) => FormField.parts.label({
     dom: { tag: 'label', classes: [ 'tox-label' ] },

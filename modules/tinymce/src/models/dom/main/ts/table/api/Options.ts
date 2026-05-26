@@ -1,8 +1,8 @@
 import { Arr, Optional, Type } from '@ephox/katamari';
 import { SelectorFind, SugarBody, SugarElement, Width } from '@ephox/sugar';
 
-import Editor from 'tinymce/core/api/Editor';
-import { EditorOptions } from 'tinymce/core/api/OptionTypes';
+import type Editor from 'tinymce/core/api/Editor';
+import type { EditorOptions } from 'tinymce/core/api/OptionTypes';
 
 export type TableSizingMode = 'fixed' | 'relative' | 'responsive' | 'auto';
 export type TableColumnResizing = 'preservetable' | 'resizetable';
@@ -107,6 +107,16 @@ const register = (editor: Editor): void => {
     processor: 'boolean',
     default: true
   });
+
+  registerOption('table_default_header_rows', {
+    processor: 'number',
+    default: 0
+  });
+
+  registerOption('table_default_header_cols', {
+    processor: 'number',
+    default: 0
+  });
 };
 
 const getTableCloneElements = (editor: Editor): Optional<string[]> => {
@@ -144,6 +154,10 @@ const hasTableResizeBars = option<boolean>('table_resize_bars');
 const shouldStyleWithCss = option<boolean>('table_style_by_css');
 
 const shouldMergeContentOnPaste = option<boolean>('table_merge_content_on_paste');
+
+const defaultHeaderRows = option<number>('table_default_header_rows');
+
+const defaultHeaderCols = option<number>('table_default_header_cols');
 
 const getTableDefaultAttributes = (editor: Editor): Record<string, string> => {
   // Note: The we don't rely on the default here as we need to dynamically lookup the widths based on the current editor state
@@ -204,5 +218,7 @@ export {
   getTableDefaultStyles,
   tableUseColumnGroup,
   shouldMergeContentOnPaste,
-  isSplitUiMode
+  isSplitUiMode,
+  defaultHeaderRows,
+  defaultHeaderCols
 };

@@ -4,14 +4,15 @@ import { SelectorFind, Selectors, SugarElement } from '@ephox/sugar';
 import * as NodeType from '../../dom/NodeType';
 import * as RangePoint from '../../dom/RangePoint';
 import * as EditorFocus from '../../focus/EditorFocus';
-import Editor from '../Editor';
+import type Editor from '../Editor';
 import Env from '../Env';
 import * as Events from '../Events';
 import * as Options from '../Options';
-import { EditorEvent } from '../util/EventDispatcher';
+import type { EditorEvent } from '../util/EventDispatcher';
 import VK from '../util/VK';
-import DOMUtils from './DOMUtils';
-import EditorSelection from './Selection';
+
+import type DOMUtils from './DOMUtils';
+import type EditorSelection from './Selection';
 
 interface ControlSelection {
   isResizable: (elm: Element) => boolean;
@@ -42,7 +43,7 @@ interface SelectedResizeHandle extends ResizeHandle {
 }
 
 const elementSelectionAttr = 'data-mce-selected';
-const controlElmSelector = 'table,img,figure.image,hr,video,span.mce-preview-object,details';
+const controlElmSelector = `table,img,figure.image,hr,video,span.mce-preview-object,details,${NodeType.ucVideoNodeName}`;
 const abs = Math.abs;
 const round = Math.round;
 
@@ -154,15 +155,33 @@ const ControlSelection = (selection: EditorSelection, editor: Editor): ControlSe
     }
   };
 
+  const setUcVideoSizeProp = (element: NodeType.UcVideo, name: 'width' | 'height', value: number) => {
+    // this is needed because otherwise the ghost for `uc-video` is not correctly rendered
+    element[name] = value;
+    const minimumWidth = 400;
+    if (element.width > minimumWidth && !(name === 'width' && value < minimumWidth)) {
+      element[name] = value;
+      dom.setStyle(element, name, value);
+    } else {
+      const valueConsideringMinWidth = name === 'height' ? minimumWidth * (ratio ?? 1) : minimumWidth;
+      element[name] = valueConsideringMinWidth;
+      dom.setStyle(element, name, valueConsideringMinWidth);
+    }
+  };
+
   const setSizeProp = (element: HTMLElement, name: 'width' | 'height', value: number | undefined) => {
     if (Type.isNonNullable(value)) {
       // Resize by using style or attribute
       const targets = getResizeTargets(element);
       Arr.each(targets, (target) => {
-        if (target.style[name] || !editor.schema.isValid(target.nodeName.toLowerCase(), name)) {
-          dom.setStyle(target, name, value);
+        if (NodeType.isUcVideo(target)) {
+          setUcVideoSizeProp(target, name, value);
         } else {
-          dom.setAttrib(target, name, '' + value);
+          if (target.style[name] || !editor.schema.isValid(target.nodeName.toLowerCase(), name)) {
+            dom.setStyle(target, name, value);
+          } else {
+            dom.setAttrib(target, name, '' + value);
+          }
         }
       });
     }
@@ -189,7 +208,7 @@ const ControlSelection = (selection: EditorSelection, editor: Editor): ControlSe
     width = width < 5 ? 5 : width;
     height = height < 5 ? 5 : height;
 
-    if ((isImage(selectedElm) || isMedia(selectedElm)) && Options.getResizeImgProportional(editor) !== false) {
+    if ((isImage(selectedElm) || isMedia(selectedElm) || NodeType.isUcVideo(selectedElm)) && Options.getResizeImgProportional(editor) !== false) {
       proportional = !VK.modifierPressed(e);
     } else {
       proportional = VK.modifierPressed(e);

@@ -1,10 +1,10 @@
 import { Arr, Cell, Optional, Throttler } from '@ephox/katamari';
 
-import Editor from 'tinymce/core/api/Editor';
-import { Dialog } from 'tinymce/core/api/ui/Ui';
+import type Editor from 'tinymce/core/api/Editor';
+import type { Dialog } from 'tinymce/core/api/ui/Ui';
 
 import { insertEmoticon } from '../core/Actions';
-import { ALL_CATEGORY, EmojiDatabase } from '../core/EmojiDatabase';
+import { ALL_CATEGORY, type EmojiDatabase } from '../core/EmojiDatabase';
 import { emojisFrom } from '../core/Lookup';
 
 interface DialogData {
@@ -18,7 +18,7 @@ const open = (editor: Editor, database: EmojiDatabase): void => {
 
   const initialState: DialogData = {
     pattern: '',
-    results: emojisFrom(database.listAll(), '', Optional.some(300))
+    results: emojisFrom(database.listAll(), '', Optional.none())
   };
 
   const currentTab = Cell(ALL_CATEGORY);
@@ -27,7 +27,7 @@ const open = (editor: Editor, database: EmojiDatabase): void => {
     const dialogData = dialogApi.getData();
     const category = currentTab.get();
     const candidates = database.listCategory(category);
-    const results = emojisFrom(candidates, dialogData[patternName], category === ALL_CATEGORY ? Optional.some(300) : Optional.none());
+    const results = emojisFrom(candidates, dialogData[patternName], Optional.none());
     dialogApi.setData({
       results
     });
@@ -53,6 +53,7 @@ const open = (editor: Editor, database: EmojiDatabase): void => {
   const getInitialState = (): Dialog.DialogSpec<DialogData> => {
     const body: Dialog.TabPanelSpec = {
       type: 'tabpanel',
+      dynamicHeight: true,
       // All tabs have the same fields.
       tabs: Arr.map(database.listCategories(), (cat) => ({
         title: cat,

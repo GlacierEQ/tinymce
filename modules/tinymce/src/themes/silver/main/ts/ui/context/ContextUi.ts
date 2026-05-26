@@ -1,9 +1,9 @@
 import {
-  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloySpec, AlloyTriggers, Behaviour, CustomEvent, GuiFactory, InlineView, Keying, NativeEvents,
-  SketchSpec
+  AddEventsBehaviour, type AlloyComponent, AlloyEvents, type AlloySpec, AlloyTriggers, Behaviour, type CustomEvent, GuiFactory, InlineView, Keying, NativeEvents,
+  type SketchSpec
 } from '@ephox/alloy';
 import { Arr, Cell, Id, Optional, Result } from '@ephox/katamari';
-import { Class, Compare, Css, EventArgs, Focus, SugarElement, SugarShadowDom, Width } from '@ephox/sugar';
+import { Class, Compare, Css, type EventArgs, Focus, type SugarElement, SugarShadowDom, Width } from '@ephox/sugar';
 
 import * as ContextToolbarFocus from './ContextToolbarFocus';
 
@@ -28,6 +28,7 @@ interface ContextToolbarSpec {
   readonly sink: AlloyComponent;
   readonly onHide: () => void;
   readonly onBack: () => void;
+  readonly focusElement: (el: SugarElement<HTMLElement>) => void;
 }
 
 export interface ContextToolbarRenderResult {
@@ -107,7 +108,7 @@ const renderContextToolbar = (spec: ContextToolbarSpec): ContextToolbarRenderRes
                 (active) => {
                   // We need this extra check since if the focus is aleady on the iframe we don't want to call focus on it again since that closes the context toolbar
                   if (!Compare.eq(active, f)) {
-                    Focus.focus(f);
+                    spec.focusElement(f);
                   }
                 }
               );

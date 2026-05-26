@@ -1,11 +1,11 @@
-import { ApproxStructure, Assertions, FocusTools, Keys, Mouse, StructAssert, TestStore, UiFinder, Waiter } from '@ephox/agar';
+import { ApproxStructure, Assertions, FocusTools, Keys, Mouse, type StructAssert, TestStore, UiFinder, Waiter } from '@ephox/agar';
 import { afterEach, describe, it } from '@ephox/bedrock-client';
 import { Fun } from '@ephox/katamari';
 import { SugarBody, SugarDocument, Value } from '@ephox/sugar';
 import { TinyDom, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 import { assert } from 'chai';
 
-import Editor from 'tinymce/core/api/Editor';
+import type Editor from 'tinymce/core/api/Editor';
 
 describe('browser.tinymce.themes.silver.editor.ContextSizeInputFormTest', () => {
   const store = TestStore();
@@ -76,6 +76,41 @@ describe('browser.tinymce.themes.silver.editor.ContextSizeInputFormTest', () => 
             tooltip: 'Back',
             align: 'start',
             onAction: (formApi) => formApi.back()
+          }
+        ]
+      });
+
+      ed.ui.registry.addContextToolbar('test-toolbar-disabled', {
+        items: 'test-form-disabled undo',
+        position: 'node',
+        scope: 'node',
+        predicate: (node) => node.nodeName.toLowerCase() === 'div',
+      });
+
+      ed.ui.registry.addContextForm('test-form-disabled', {
+        type: 'contextsizeinputform',
+        launch: {
+          type: 'contextformtogglebutton',
+          icon: 'fake-icon-name',
+          tooltip: 'ABC'
+        },
+        initValue: Fun.constant({ width: '100', height: '200' }),
+        onSetup: (api) => {
+          api.setInputEnabled(false);
+          store.add('setup');
+          return Fun.noop;
+        },
+        commands: [
+          {
+            type: 'contextformbutton',
+            icon: 'fake-icon-name',
+            tooltip: 'A',
+            align: 'start',
+            onAction: (formApi) => {
+              store.add(`${formApi.isInputEnabled()}`);
+              formApi.setInputEnabled(true);
+              store.add(`${formApi.isInputEnabled()}`);
+            }
           }
         ]
       });
@@ -257,6 +292,13 @@ describe('browser.tinymce.themes.silver.editor.ContextSizeInputFormTest', () => 
     TinyUiActions.keystroke(editor, Keys.tab());
 
     await FocusTools.pTryOnSelector('Focus should be on the B button', SugarDocument.getDocument(), buttonBSelector);
+  });
+
+  it('TINY-11912: disabling the input `onSetup` should results in a disabled input also in the commands', async () => {
+    const editor = hook.editor();
+    openToolbar(editor, 'test-form-disabled');
+    TinyUiActions.clickOnUi(editor, '.tox-pop button[aria-label="A"]');
+    store.assertEq('Input should trigger onInput with the right value and type', [ 'setup', 'false', 'true' ]);
   });
 });
 

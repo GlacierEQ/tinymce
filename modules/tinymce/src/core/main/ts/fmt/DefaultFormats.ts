@@ -1,7 +1,8 @@
-import Editor from '../api/Editor';
+import type Editor from '../api/Editor';
 import Tools from '../api/util/Tools';
 import * as NodeType from '../dom/NodeType';
-import { Format, Formats, FormatVars } from './FormatTypes';
+
+import type { Format, Formats, FormatVars } from './FormatTypes';
 
 const get = (editor: Editor): Formats => {
   const dom = editor.dom;
@@ -231,7 +232,7 @@ const get = (editor: Editor): Formats => {
     hilitecolor: { inline: 'span', styles: { backgroundColor: '%value' }, links: true, remove_similar: true, clear_child_styles: true },
     fontname: { inline: 'span', toggle: false, styles: { fontFamily: '%value' }, clear_child_styles: true },
     fontsize: { inline: 'span', toggle: false, styles: { fontSize: '%value' }, clear_child_styles: true },
-    lineheight: { selector: 'h1,h2,h3,h4,h5,h6,p,li,td,th,div', styles: { lineHeight: '%value' }},
+    lineheight: { selector: 'h1,h2,h3,h4,h5,h6,p,li,td,th,div', styles: { lineHeight: '%value' }, remove_similar: true },
     fontsize_class: { inline: 'span', attributes: { class: '%value' }},
     blockquote: { block: 'blockquote', wrapper: true, remove: 'all' },
     subscript: { inline: 'sub' },

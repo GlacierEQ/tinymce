@@ -1,11 +1,11 @@
-import { ApproxStructure, Assertions, FocusTools, Keys, Mouse, StructAssert, TestStore, UiFinder, Waiter } from '@ephox/agar';
+import { ApproxStructure, Assertions, FocusTools, Keys, Mouse, type StructAssert, TestStore, UiFinder, Waiter } from '@ephox/agar';
 import { beforeEach, describe, it } from '@ephox/bedrock-client';
 import { Arr } from '@ephox/katamari';
 import { SugarBody, SugarDocument } from '@ephox/sugar';
 import { TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 
-import Editor from 'tinymce/core/api/Editor';
-import { Menu } from 'tinymce/core/api/ui/Ui';
+import type Editor from 'tinymce/core/api/Editor';
+import type { Menu } from 'tinymce/core/api/ui/Ui';
 import LocalStorage from 'tinymce/core/api/util/LocalStorage';
 
 import * as GuiSetup from '../../module/GuiSetup';
@@ -88,7 +88,7 @@ describe('browser.tinymce.themes.silver.skin.OxideColorSwatchMenuTest', () => {
 
   const pOpenAndGetMenu = (title: string) =>
     () => {
-      Mouse.clickOn(SugarBody.body(), `[data-mce-name="${title}"] .tox-split-button__chevron`);
+      Mouse.clickOn(SugarBody.body(), `button[data-mce-name="${title}-chevron"]`);
       return Waiter.pTryUntil('Waiting for menu', () =>
         UiFinder.findIn(SugarBody.body(), '[role="menu"]').getOrDie()
       );
@@ -96,7 +96,7 @@ describe('browser.tinymce.themes.silver.skin.OxideColorSwatchMenuTest', () => {
 
   const pCloseMenu = (title: string) =>
     () => {
-      Mouse.clickOn(SugarBody.body(), `[data-mce-name="${title}"] .tox-split-button__chevron`);
+      Mouse.clickOn(SugarBody.body(), `button[data-mce-name="${title}-chevron"]`);
       return Waiter.pTryUntil('Waiting for menu', () =>
         UiFinder.notExists(SugarBody.body(), '[role="menu"]')
       );

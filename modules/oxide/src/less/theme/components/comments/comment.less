@@ -10,7 +10,7 @@
 @comment-border-radius: @panel-border-radius;
 @comment-border-width: 1px;
 @comment-border: @comment-border-width solid @comment-border-color;
-@comment-box-shadow: 0 4px 8px 0 fade(@color-black, 10%);
+@comment-box-shadow: @sidebar-header-box-shadow;
 //TODO: Same as menu. Make a common helper variable?
 @comment-font-size: @font-size-md;
 @comment-font-style: normal;
@@ -28,37 +28,6 @@
 
 @single-comment-margin-bottom: 12px;
 .tox {
-
-  .tox-conversations {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    height: 100%;
-
-    /* This is to give the sidebar a consistent width. Need a solution for this */
-    min-width: 300px;
-    max-width: 300px;
-    width: 300px;
-  }
-
-  .tox-conversations__header {
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    box-shadow: @comment-box-shadow;
-    padding: @pad-sm 12px;
-    background: @background-color;
-    z-index: 1;
-  }
-
-  .tox-conversations__title {
-    font-size: @font-size-lg;
-    font-weight: 400;
-    padding: @pad-sm 0 @pad-sm 0;
-    color: @comment-text-color;
-    line-height: 28px;
-  }
-
   .tox-comment {
     background: @comment-background-color;
     border: @comment-border;
@@ -122,7 +91,7 @@
   .tox-comment__date {
     color: @user-name-text-color;
     font-size: @font-size-xs;
-    line-height: @user-avatar-height / 2;
+    line-height: (@user-avatar-height / 2);
   }
 
   .tox-comment__body {
@@ -329,34 +298,6 @@
   /* A comment fades to 0 when it is being deleted, then is removed */
   .tox-comment[data-transitioning-destination="deleting"] {
     opacity: 0.0;
-  }
-
-  //should this be in comments? Or will we use this in some different places?
-  .tox-skeleton {
-    .tox-skeleton__line {
-      height: 16px;
-      width: 100%;
-      background: linear-gradient(to right, rgba(240, 240, 240, 0.5) 8%, rgba(240, 240, 240, 0.7) 18%, rgba(240, 240, 240, 0.5) 33%);
-      animation: wave 2s infinite ease-out;
-    }
-
-    .tox-skeleton__circle {
-      height: 36px;
-      width: 36px;
-      margin-right: @pad-sm;
-      border-radius: 100%;
-      background: linear-gradient(to right, rgba(240, 240, 240, 0.5) 8%, rgba(240, 240, 240, 0.7) 18%, rgba(240, 240, 240, 0.5) 33%);
-      animation: wave 2s infinite ease-out;
-    }
-
-    @keyframes wave {
-      0% {
-        background-position: -268px 0;
-      }
-      100% {
-        background-position: 268px 0;
-      }
-    }
   }
 
   .tox-ring-loader {

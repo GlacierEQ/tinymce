@@ -1,5 +1,5 @@
 import { Fun, Obj } from '@ephox/katamari';
-import { SugarElement, SugarLocation, SugarNode, SugarPosition, Traverse } from '@ephox/sugar';
+import { type SugarElement, SugarLocation, SugarNode, SugarPosition, Traverse } from '@ephox/sugar';
 
 // The 'button' field of the mouse event - which button was pressed to create the event. Pick only one value. Not defined for mouseenter,
 // mouseleave, mouseover, mouseout or mousemove.
@@ -30,7 +30,7 @@ interface Settings {
 }
 
 // Types of events
-type EventType = 'click' | 'mousedown' | 'mouseup' | 'mousemove' | 'mouseover' | 'mouseout' | 'contextmenu' | 'dblclick';
+type EventType = 'click' | 'mousedown' | 'mouseup' | 'mousemove' | 'mouseover' | 'mouseout' | 'mouseenter' | 'mouseleave' | 'contextmenu' | 'dblclick';
 
 // Fire an event
 const event = (type: EventType, { dx, dy, ...settings }: Settings) => (element: SugarElement<Node>): void => {
@@ -58,6 +58,10 @@ const mouseOver = Fun.curry(event, 'mouseover');
 const mouseOut = Fun.curry(event, 'mouseout');
 const contextMenu = (settings: Settings): (element: SugarElement<Node>) => void =>
   event('contextmenu', { button: rightClickButton, ...settings });
+const mouseEnter = (settings: Settings): (element: SugarElement<Node>) => void =>
+  event('mouseenter', { bubbles: false, ...settings });
+const mouseLeave = (settings: Settings): (element: SugarElement<Node>) => void =>
+  event('mouseleave', { bubbles: false, ...settings });
 const dblclick = Fun.curry(event, 'dblclick');
 
 // Note: This can be used for phantomjs.
@@ -85,10 +89,9 @@ const point = (type: string, button: number, element: SugarElement<Node>, x: num
   element.dom.dispatchEvent(ev);
 };
 
+export type { Settings, EventType };
 export {
   event,
-  Settings,
-  EventType,
   leftClickButton,
   middleClickButton,
   rightClickButton,
@@ -101,8 +104,9 @@ export {
   mouseMove,
   mouseOver,
   mouseOut,
+  mouseEnter,
+  mouseLeave,
   contextMenu,
-  // deprecate these
   point,
   trigger,
   dblclick

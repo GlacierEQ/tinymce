@@ -4,29 +4,31 @@ import { Attribute, Insert, Remove, SugarElement, SugarShadowDom } from '@ephox/
 import Annotator from '../api/Annotator';
 import DOMUtils from '../api/dom/DOMUtils';
 import EditorSelection from '../api/dom/Selection';
-import DomSerializer, { DomSerializerSettings } from '../api/dom/Serializer';
-import StyleSheetLoader from '../api/dom/StyleSheetLoader';
-import Editor from '../api/Editor';
+import DomSerializer, { type DomSerializerSettings } from '../api/dom/Serializer';
+import type StyleSheetLoader from '../api/dom/StyleSheetLoader';
+import type Editor from '../api/Editor';
 import EditorUpload from '../api/EditorUpload';
 import * as Events from '../api/Events';
 import Formatter from '../api/Formatter';
-import DomParser, { DomParserSettings } from '../api/html/DomParser';
+import DomParser, { type DomParserSettings } from '../api/html/DomParser';
 import AstNode from '../api/html/Node';
-import Schema, { SchemaSettings } from '../api/html/Schema';
+import Schema, { type SchemaSettings } from '../api/html/Schema';
 import * as Options from '../api/Options';
-import { TinyMCE } from '../api/Tinymce';
+import type { TinyMCE } from '../api/Tinymce';
 import UndoManager from '../api/UndoManager';
 import Delay from '../api/util/Delay';
 import Tools from '../api/util/Tools';
 import * as CaretFinder from '../caret/CaretFinder';
-import CaretPosition from '../caret/CaretPosition';
+import type CaretPosition from '../caret/CaretPosition';
 import * as Placeholder from '../content/Placeholder';
 import * as DeleteCommands from '../delete/DeleteCommands';
 import * as NodeType from '../dom/NodeType';
 import * as TouchEvents from '../events/TouchEvents';
 import * as ForceBlocks from '../ForceBlocks';
 import * as NonEditableFilter from '../html/NonEditableFilter';
+import * as ProtectedFilter from '../html/ProtectedFilter';
 import * as KeyboardOverrides from '../keyboard/KeyboardOverrides';
+import * as Lists from '../lists/Lists';
 import * as Disabled from '../mode/Disabled';
 import { NodeChange } from '../NodeChange';
 import * as Paste from '../paste/Paste';
@@ -37,10 +39,9 @@ import { hasAnyRanges } from '../selection/SelectionUtils';
 import SelectionOverrides from '../SelectionOverrides';
 import * as TextPattern from '../textpatterns/TextPatterns';
 import Quirks from '../util/Quirks';
-import * as ContentCss from './ContentCss';
-import * as LicenseKeyValidation from './LicenseKeyValidation';
 
-declare const escape: any;
+import * as InitComponents from './InitComponents';
+
 declare let tinymce: TinyMCE;
 
 const DOM = DOMUtils.DOM;
@@ -74,6 +75,7 @@ const mkParserSettings = (editor: Editor): DomParserSettings => {
     allow_svg_data_urls: getOption('allow_svg_data_urls'),
     allow_html_in_named_anchor: getOption('allow_html_in_named_anchor'),
     allow_script_urls: getOption('allow_script_urls'),
+    allow_html_in_comments: getOption('allow_html_in_comments'),
     allow_mathml_annotation_encodings: getOption('allow_mathml_annotation_encodings'),
     allow_unsafe_link_target: getOption('allow_unsafe_link_target'),
     convert_unsafe_embeds: getOption('convert_unsafe_embeds'),
@@ -140,6 +142,12 @@ const mkSerializerSettings = (editor: Editor): DomSerializerSettings => {
 
 const createParser = (editor: Editor): DomParser => {
   const parser = DomParser(mkParserSettings(editor), editor.schema);
+
+  parser.addAttributeFilter('data-mce-src,data-mce-href,data-mce-style', (nodes, name) => {
+    for (let i = 0; i < nodes.length; i++) {
+      nodes[i].attr(name, null);
+    }
+  });
 
   // Convert src and href into data-mce-src, data-mce-href and data-mce-style
   parser.addAttributeFilter('src,href,style,tabindex', (nodes, name) => {
@@ -275,11 +283,11 @@ const getStyleSheetLoader = (editor: Editor): StyleSheetLoader =>
   editor.inline ? editor.ui.styleSheetLoader : editor.dom.styleSheetLoader;
 
 const makeStylesheetLoadingPromises = (editor: Editor, css: string[], framedFonts: string[]): Promise<unknown>[] => {
-  const { pass: bundledCss, fail: normalCss } = Arr.partition(css, (name) => tinymce.Resource.has(ContentCss.toContentSkinResourceName(name)));
-  const bundledPromises = bundledCss.map((url) => {
-    const css = tinymce.Resource.get(ContentCss.toContentSkinResourceName(url));
+  const { pass: bundledCss, fail: normalCss } = Arr.partition(css, (key) => tinymce.Resource.has(key));
+  const bundledPromises = bundledCss.map((key) => {
+    const css = tinymce.Resource.get(key);
     if (Type.isString(css)) {
-      return Promise.resolve(getStyleSheetLoader(editor).loadRawCss(url, css));
+      return Promise.resolve(getStyleSheetLoader(editor).loadRawCss(key, css));
     }
     return Promise.resolve();
   });
@@ -361,13 +369,7 @@ const preInit = (editor: Editor) => {
 
   const protect = Options.getProtect(editor);
   if (protect) {
-    editor.on('BeforeSetContent', (e) => {
-      Tools.each(protect, (pattern) => {
-        e.content = e.content.replace(pattern, (str) => {
-          return '<!--mce:protected ' + escape(str) + '-->';
-        });
-      });
-    });
+    ProtectedFilter.registerProtectedHtmlFilters(editor, protect);
   }
 
   editor.on('SetContent', () => {
@@ -420,6 +422,12 @@ const contentBodyLoaded = (editor: Editor): void => {
     editor.contentAreaContainer = targetElm;
   }
 
+  const contentLanguage = Options.getContentLanguage(editor);
+  if (contentLanguage) {
+    const langTarget = editor.inline ? targetElm : doc.documentElement;
+    DOM.setAttrib(langTarget, 'lang', contentLanguage);
+  }
+
   // It will not steal focus while setting contentEditable
   const body = editor.getBody();
   // disabled isn't valid on all body elements, so need to cast here
@@ -439,6 +447,7 @@ const contentBodyLoaded = (editor: Editor): void => {
   (body as any).disabled = false;
 
   editor.editorUpload = EditorUpload(editor);
+
   editor.schema = Schema(mkSchemaSettings(editor));
   editor.dom = DOMUtils(doc, {
     keep_values: true,
@@ -452,6 +461,7 @@ const contentBodyLoaded = (editor: Editor): void => {
     schema: editor.schema,
     contentCssCors: Options.shouldUseContentCssCors(editor),
     referrerPolicy: Options.getReferrerPolicy(editor),
+    crossOrigin: Options.getCrossOrigin(editor),
     onSetAttrib: (e) => {
       editor.dispatch('SetAttrib', e);
     },
@@ -466,9 +476,12 @@ const contentBodyLoaded = (editor: Editor): void => {
   editor._nodeChangeDispatcher = new NodeChange(editor);
   editor._selectionOverrides = SelectionOverrides(editor);
 
+  Lists.setup(editor);
   TouchEvents.setup(editor);
   DetailsElement.setup(editor);
-  NonEditableFilter.setup(editor);
+  if (Options.shouldAllowNonEditable(editor)) {
+    NonEditableFilter.setup(editor);
+  }
 
   if (!Rtc.isRtc(editor)) {
     MultiClickSelection.setup(editor);
@@ -479,13 +492,13 @@ const contentBodyLoaded = (editor: Editor): void => {
   DeleteCommands.setup(editor, caret);
   ForceBlocks.setup(editor);
   Placeholder.setup(editor);
-  Paste.setup(editor);
+  Paste.setup(editor, caret);
 
   const setupRtcThunk = Rtc.setup(editor);
 
   preInit(editor);
 
-  LicenseKeyValidation.validateEditorLicenseKey(editor);
+  InitComponents.loadComponents(editor);
 
   setupRtcThunk.fold(() => {
     const cancelProgress = startProgress(editor);

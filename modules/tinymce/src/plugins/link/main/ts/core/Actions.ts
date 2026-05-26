@@ -1,12 +1,13 @@
-import { Arr, Optional, Obj, Type } from '@ephox/katamari';
+import { Arr, Obj, Optional, Type } from '@ephox/katamari';
 
-import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
-import Editor from 'tinymce/core/api/Editor';
+import type DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import type Editor from 'tinymce/core/api/Editor';
 import URI from 'tinymce/core/api/util/URI';
 
 import * as Options from '../api/Options';
 import { AssumeExternalTargets } from '../api/Types';
-import { AttachState, LinkDialogOutput } from '../ui/DialogTypes';
+import type { AttachState, LinkDialogOutput } from '../ui/DialogTypes';
+
 import * as Utils from './Utils';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -124,8 +125,8 @@ const linkDomMutation = (editor: Editor, attachState: AttachState, data: LinkDia
 
 const unlinkSelection = (editor: Editor): void => {
   const dom = editor.dom, selection = editor.selection;
-  const bookmark = selection.getBookmark();
   const rng = selection.getRng().cloneRange();
+  const bookmark = selection.getBookmark();
 
   // Extend the selection out to the entire anchor element
   const startAnchorElm = dom.getParent(rng.startContainer, 'a[href]', editor.getBody());

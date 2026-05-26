@@ -15,7 +15,7 @@ import { Container } from 'ephox/alloy/api/ui/Container';
 import { Dropdown } from 'ephox/alloy/api/ui/Dropdown';
 import { tieredMenu as TieredMenu } from 'ephox/alloy/api/ui/TieredMenu';
 import * as DropdownAssertions from 'ephox/alloy/test/dropdown/DropdownAssertions';
-import { TestItem } from 'ephox/alloy/test/dropdown/TestDropdownMenu';
+import type { TestItem } from 'ephox/alloy/test/dropdown/TestDropdownMenu';
 import * as TestDropdownMenu from 'ephox/alloy/test/dropdown/TestDropdownMenu';
 import * as GuiSetup from 'ephox/alloy/test/GuiSetup';
 import * as NavigationUtils from 'ephox/alloy/test/NavigationUtils';
@@ -201,12 +201,6 @@ UnitTest.asynctest('Dropdown List', (success, failure) => {
       ]),
       NavigationUtils.sequence(doc, Keys.left(), {}, [
         focusables.alpha, focusables.alpha
-      ]),
-      NavigationUtils.sequence(doc, Keys.tab(), {}, [
-        focusables.beta, focusables.gamma, focusables.delta, focusables.alpha
-      ]),
-      NavigationUtils.sequence(doc, Keys.tab(), { shift: true }, [
-        focusables.delta, focusables.gamma, focusables.beta, focusables.alpha
       ]),
 
       Keyboard.sKeydown(doc, Keys.down(), {}),

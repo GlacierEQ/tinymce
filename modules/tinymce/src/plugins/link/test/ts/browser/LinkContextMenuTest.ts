@@ -3,7 +3,7 @@ import { describe, it } from '@ephox/bedrock-client';
 import { SugarDocument } from '@ephox/sugar';
 import { TinyAssertions, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 
-import Editor from 'tinymce/core/api/Editor';
+import type Editor from 'tinymce/core/api/Editor';
 import Plugin from 'tinymce/plugins/link/Plugin';
 
 import { pAssertFocusOnItem } from '../module/Utils';
@@ -18,7 +18,7 @@ describe('browser.tinymce.plugins.link.LinkContextMenuTest', () => {
   const pressDownArrowKey = (editor: Editor) => TinyUiActions.keydown(editor, Keys.down());
 
   const pTestContextMenuItems = async (editor: Editor) => {
-    await pAssertFocusOnItem('Link...', '.tox-collection__item:contains("Link...")');
+    await pAssertFocusOnItem('Link…', '.tox-collection__item:contains("Link…")');
     pressDownArrowKey(editor);
     await pAssertFocusOnItem('Remove link', '.tox-collection__item:contains("Remove link")');
     pressDownArrowKey(editor);

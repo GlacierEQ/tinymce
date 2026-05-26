@@ -1,4 +1,5 @@
-import { ArrayAssert, StringAssert, StructAssert, StructAssertAdv, StructAssertBasic } from '../assertions/ApproxStructures';
+import type { ArrayAssert, StringAssert, StructAssert, StructAssertAdv, StructAssertBasic } from '../assertions/ApproxStructures';
+
 import * as ApproxStructure from './ApproxStructure';
 import * as Arbitraries from './Arbitraries';
 import * as Assertions from './Assertions';
@@ -6,6 +7,7 @@ import { Chain } from './Chain';
 import * as ChainSequence from './ChainSequence';
 import { Cleaner } from './Cleaner';
 import * as Clipboard from './Clipboard';
+import * as ConsoleReader from './ConsoleReader';
 import * as Cursors from './Cursors';
 import * as DragnDrop from './DragnDrop';
 import * as FileInput from './FileInput';
@@ -15,6 +17,7 @@ import * as GeneralSteps from './GeneralSteps';
 import * as Generators from './Generators';
 import { GroupStore } from './GroupStore';
 import * as Guard from './Guard';
+import * as Http from './Http';
 import * as Keyboard from './Keyboard';
 import { Keys } from './Keys';
 import * as Log from './Log';
@@ -23,9 +26,10 @@ import { Monitor } from './Monitor';
 import * as Mouse from './Mouse';
 import { NamedChain } from './NamedChain';
 import { Pipeline } from './Pipeline';
+import * as Pointer from './Pointer';
 import * as PropertySteps from './PropertySteps';
 import * as RealClipboard from './RealClipboard';
-import { KeyPressAdt, RealKeys } from './RealKeys';
+import { type KeyPressAdt, RealKeys } from './RealKeys';
 import * as RealMouse from './RealMouse';
 import { Step } from './Step';
 import * as StepSequence from './StepSequence';
@@ -36,6 +40,14 @@ import * as UiControls from './UiControls';
 import * as UiFinder from './UiFinder';
 import * as Waiter from './Waiter';
 
+export type {
+  KeyPressAdt,
+  ArrayAssert,
+  StringAssert,
+  StructAssert,
+  StructAssertBasic,
+  StructAssertAdv
+};
 export {
   ApproxStructure,
   Arbitraries,
@@ -45,19 +57,21 @@ export {
   Cleaner,
   Clipboard,
   Cursors,
+  ConsoleReader,
   FocusTools,
   GeneralSteps,
   StepSequence,
   Generators,
   GroupStore,
   Guard,
+  Http,
   Keyboard,
-  KeyPressAdt,
   Keys,
   Log,
   Logger,
   Monitor,
   Mouse,
+  Pointer,
   NamedChain,
   Pipeline,
   PropertySteps,
@@ -70,11 +84,6 @@ export {
   UiFinder,
   Waiter,
   Touch,
-  ArrayAssert,
-  StringAssert,
-  StructAssert,
-  StructAssertBasic,
-  StructAssertAdv,
   DragnDrop,
   Files,
   FileInput,

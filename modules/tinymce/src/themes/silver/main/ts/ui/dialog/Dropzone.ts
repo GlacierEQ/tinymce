@@ -1,16 +1,16 @@
 import {
-  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Button, Disabling,
-  FormField as AlloyFormField, GuiFactory, Memento, NativeEvents, Representing, SimpleSpec, SimulatedEvent,
+  AddEventsBehaviour, type AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Button, Disabling,
+  FormField as AlloyFormField, GuiFactory, Memento, NativeEvents, Representing, type SimpleSpec, type SimulatedEvent,
   SystemEvents, Tabstopping, Toggling,
-  CustomEvent
+  type CustomEvent
 } from '@ephox/alloy';
-import { Dialog } from '@ephox/bridge';
-import { Arr, Id, Optional, Strings } from '@ephox/katamari';
-import { EventArgs } from '@ephox/sugar';
+import type { Dialog } from '@ephox/bridge';
+import { Arr, Fun, Id, type Optional, Strings } from '@ephox/katamari';
+import type { EventArgs } from '@ephox/sugar';
 
 import Tools from 'tinymce/core/api/util/Tools';
 
-import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
+import type { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import * as UiState from '../../UiState';
 import { ComposingConfigs } from '../alien/ComposingConfigs';
 import { DisablingConfigs } from '../alien/DisablingConfigs';
@@ -20,9 +20,13 @@ import { formChangeEvent } from '../general/FormEvents';
 
 const browseFilesEvent = Id.generate('browse.files.event');
 
-const filterByExtension = (files: FileList, providersBackstage: UiFactoryBackstageProviders) => {
+const filterByExtension = (files: FileList, providersBackstage: UiFactoryBackstageProviders, allowedFileExtensions: Optional<string[]>) => {
   const allowedImageFileTypes = Tools.explode(providersBackstage.getOption('images_file_types'));
-  const isFileInAllowedTypes = (file: File) => Arr.exists(allowedImageFileTypes, (type) => Strings.endsWith(file.name.toLowerCase(), `.${type.toLowerCase()}`));
+
+  const isFileInAllowedTypes = (file: File) => allowedFileExtensions.fold(
+    () => Arr.exists(allowedImageFileTypes, (type) => Strings.endsWith(file.name.toLowerCase(), `.${type.toLowerCase()}`)),
+    (exts) => Arr.exists(exts, (type) => Strings.endsWith(file.name.toLowerCase(), `.${type.toLowerCase()}`))
+  );
 
   return Arr.filter(Arr.from(files), isFileInAllowedTypes);
 };
@@ -57,8 +61,14 @@ export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactory
 
   const handleFiles = (component: AlloyComponent, files: FileList | null | undefined) => {
     if (files) {
-      Representing.setValue(component, filterByExtension(files, providersBackstage));
+      const filteredFiles = filterByExtension(files, providersBackstage, spec.allowedFileExtensions);
+      Representing.setValue(component, filteredFiles);
       AlloyTriggers.emitWith(component, formChangeEvent, { name: spec.name });
+      if (filteredFiles.length === 0) {
+        spec.onInvalidFiles().finally(() => {
+          component.element.dom.focus();
+        }).catch(Fun.noop);
+      }
     }
   };
 
@@ -68,7 +78,7 @@ export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactory
         tag: 'input',
         attributes: {
           type: 'file',
-          accept: 'image/*'
+          accept: spec.allowedFileTypes.getOr('image/*')
         },
         styles: {
           display: 'none'
@@ -95,7 +105,7 @@ export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactory
         classes: [ 'tox-button', 'tox-button--secondary' ]
       },
       components: [
-        GuiFactory.text(providersBackstage.translate('Browse for an image')),
+        GuiFactory.text(providersBackstage.translate(spec.buttonLabel.getOr('Browse for an image'))),
         memInput.asSpec()
       ],
       action: (comp: AlloyComponent) => {
@@ -147,7 +157,7 @@ export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactory
               tag: 'p'
             },
             components: [
-              GuiFactory.text(providersBackstage.translate('Drop an image here'))
+              GuiFactory.text(providersBackstage.translate(spec.dropAreaLabel.getOr('Drop an image here')))
             ]
           },
           pField

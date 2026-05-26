@@ -1,5 +1,5 @@
-import Editor from 'tinymce/core/api/Editor';
-import { EditorOptions } from 'tinymce/core/api/OptionTypes';
+import type Editor from 'tinymce/core/api/Editor';
+import type { EditorOptions } from 'tinymce/core/api/OptionTypes';
 
 const option: {
   <K extends keyof EditorOptions>(name: K): (editor: Editor) => EditorOptions[K];
@@ -9,12 +9,14 @@ const option: {
 
 const getContentStyle = option('content_style');
 const shouldUseContentCssCors = option('content_css_cors');
+const getCrossOrigin = option('crossorigin');
 const getBodyClass = option('body_class');
 const getBodyId = option('body_id');
 
 export {
   getContentStyle,
   shouldUseContentCssCors,
+  getCrossOrigin,
   getBodyClass,
   getBodyId
 };

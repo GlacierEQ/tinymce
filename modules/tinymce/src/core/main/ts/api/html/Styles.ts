@@ -19,8 +19,9 @@
 import { RgbaColour, Transformations } from '@ephox/acid';
 import { Obj, Unicode } from '@ephox/katamari';
 
-import { URLConverter } from '../OptionTypes';
-import Schema, { SchemaMap } from './Schema';
+import type { URLConverter } from '../OptionTypes';
+
+import type { SchemaMap, default as Schema } from './Schema';
 
 export type StyleMap = Record<string, string | number>;
 
@@ -58,6 +59,7 @@ const Styles = (settings: StylesSettings = {}, schema?: Schema): Styles => {
     encodingLookup[invisibleChar + i] = encodingItems[i];
   }
 
+  // eslint-disable-next-line consistent-this
   const self: Styles = {
     /**
      * Parses the specified style value into an object collection. This parser will also
@@ -237,13 +239,17 @@ const Styles = (settings: StylesSettings = {}, schema?: Schema): Styles => {
         let matches: RegExpExecArray | null;
         while ((matches = styleRegExp.exec(css))) {
           styleRegExp.lastIndex = matches.index + matches[0].length;
-          let name = matches[1].replace(trimRightRegExp, '').toLowerCase();
+          let name = matches[1].replace(trimRightRegExp, '');
           let value = matches[2].replace(trimRightRegExp, '');
 
           if (name && value) {
             // Decode escaped sequences like \65 -> e
             name = decodeHexSequences(name);
             value = decodeHexSequences(value);
+            // Custom properties (--*) keep user case; standard names normalize to lowercase
+            if (!name.startsWith('--')) {
+              name = name.toLowerCase();
+            }
 
             // Skip properties with double quotes and sequences like \" \' in their names
             // See 'mXSS Attacks: Attacking well-secured Web-Applications by using innerHTML Mutations'
@@ -260,8 +266,6 @@ const Styles = (settings: StylesSettings = {}, schema?: Schema): Styles => {
             // Opera will produce 700 instead of bold in their style values
             if (name === 'font-weight' && value === '700') {
               value = 'bold';
-            } else if (name === 'color' || name === 'background-color') { // Lowercase colors like RED
-              value = value.toLowerCase();
             }
 
             // Convert RGB colors to HEX
@@ -283,7 +287,10 @@ const Styles = (settings: StylesSettings = {}, schema?: Schema): Styles => {
         compress('border', '-style');
         compress('padding', '');
         compress('margin', '');
-        compress2('border', 'border-width', 'border-style', 'border-color');
+
+        if (!/(#.* rgb(a?)\(.*)|(rgb(a?)\(.*\) )/.test(styles['border-color'])) {
+          compress2('border', 'border-width', 'border-style', 'border-color');
+        }
 
         // Remove pointless border, IE produces these
         if (styles.border === 'medium none') {

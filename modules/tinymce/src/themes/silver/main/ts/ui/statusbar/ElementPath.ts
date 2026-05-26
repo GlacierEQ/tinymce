@@ -1,10 +1,10 @@
-import { AddEventsBehaviour, AlloyEvents, AlloySpec, AriaDescribe, Behaviour, Button, Disabling, GuiFactory, Keying, Replacing, SimpleSpec, Tabstopping, Tooltipping } from '@ephox/alloy';
+import { AddEventsBehaviour, AlloyEvents, type AlloySpec, AriaDescribe, Behaviour, Button, Disabling, GuiFactory, Keying, Replacing, type SimpleSpec, Tabstopping, Tooltipping } from '@ephox/alloy';
 import { Arr } from '@ephox/katamari';
 
-import Editor from 'tinymce/core/api/Editor';
+import type Editor from 'tinymce/core/api/Editor';
 
 import * as Events from '../../api/Events';
-import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
+import type { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import * as UiState from '../../UiState';
 import { DisablingConfigs } from '../alien/DisablingConfigs';
 
@@ -107,7 +107,8 @@ const renderElementPath = (editor: Editor, settings: ElementPathSettings, provid
       tag: 'div',
       classes: [ 'tox-statusbar__path' ],
       attributes: {
-        role: 'navigation'
+        'role': 'group',
+        'aria-label': providersBackstage.translate('Element Path')
       }
     },
     behaviours: Behaviour.derive([

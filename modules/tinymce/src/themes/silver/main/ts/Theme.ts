@@ -1,9 +1,9 @@
-import { AlloyComponent, Boxes } from '@ephox/alloy';
+import { type AlloyComponent, Boxes } from '@ephox/alloy';
 import { Fun, Singleton } from '@ephox/katamari';
 import { SelectorFind, SugarElement } from '@ephox/sugar';
 
-import Editor from 'tinymce/core/api/Editor';
-import ThemeManager, { RenderResult, Theme } from 'tinymce/core/api/ThemeManager';
+import type Editor from 'tinymce/core/api/Editor';
+import ThemeManager, { type RenderResult, type Theme } from 'tinymce/core/api/ThemeManager';
 
 import NotificationManagerImpl from './alien/NotificationManagerImpl';
 import * as Options from './api/Options';
@@ -89,11 +89,15 @@ export default (): void => {
       ).map((promotion) => promotion.dom).getOrNull();
     };
 
+    const getSinkElement = (type: 'dialog' | 'popup'): HTMLElement =>
+      type === 'dialog' ? dialogs.getMothership().element.dom : popups.getMothership().element.dom;
+
     return {
       renderUI,
       getWindowManagerImpl: Fun.constant(windowMgr),
       getNotificationManagerImpl,
-      getPromotionElement
+      getPromotionElement,
+      getSinkElement
     };
   });
 };

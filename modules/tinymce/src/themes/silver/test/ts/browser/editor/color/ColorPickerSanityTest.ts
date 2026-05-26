@@ -1,17 +1,17 @@
 import { FocusTools, Keys, Mouse, UiFinder, Waiter } from '@ephox/agar';
 import { context, describe, it } from '@ephox/bedrock-client';
-import { Arr, Optional } from '@ephox/katamari';
-import { Attribute, SelectorFilter, SugarDocument, SugarElement, SugarShadowDom } from '@ephox/sugar';
+import { Arr, type Optional } from '@ephox/katamari';
+import { Attribute, SelectorFilter, SugarDocument, type SugarElement, SugarShadowDom } from '@ephox/sugar';
 import { TinyDom, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 import { assert } from 'chai';
 
-import Editor from 'tinymce/core/api/Editor';
+import type Editor from 'tinymce/core/api/Editor';
 import * as ColorSwatch from 'tinymce/themes/silver/ui/core/color/ColorSwatch';
 
 describe('browser.tinymce.themes.silver.editor.color.ColorPickerSanityTest', () => {
   const selectors = {
-    backcolorToolbar: '[aria-label^="Background color"] > .tox-tbtn + .tox-split-button__chevron',
-    forecolorToolbar: '[aria-label^="Text color"] > .tox-tbtn + .tox-split-button__chevron'
+    backcolorToolbar: 'button[data-mce-name="backcolor-chevron"][aria-label^="Background color"]',
+    forecolorToolbar: 'button[data-mce-name="forecolor-chevron"][aria-label^="Text color"]'
   };
 
   Arr.each([

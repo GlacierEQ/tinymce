@@ -5,9 +5,9 @@ Building TinyMCE
 -----------------
 See the monorepo root readme file for installation instructions.
 
-Now, build TinyMCE by using `grunt`. If you don't have `grunt-cli` installed globally, prefix with `yarn` to execute the local grunt.
-```
-$ yarn grunt
+Now, build TinyMCE by using `grunt`. If you don't have `grunt-cli` installed globally, prefix with `bun` to execute the local grunt.
+```bash
+bun grunt
 ```
 
 Build tasks
@@ -82,6 +82,6 @@ Docs are hosted on Github in the [tinymce-docs](https://github.com/tinymce/tinym
 
 [How to contribute](https://github.com/tinymce/tinymce-docs/blob/main/CONTRIBUTING.md) to the docs, including a style guide, can be found on the GitHub repo.
 
-[Documentation](https://www.tiny.cloud/docs/tinymce/7/)
+[Documentation](https://www.tiny.cloud/docs/tinymce/8/)
 
 [Log feedback](https://github.com/tinymce/tinymce/labels/6.x)

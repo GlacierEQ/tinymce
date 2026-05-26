@@ -1,13 +1,20 @@
-import { Fun } from '@ephox/katamari';
+import { Arr, Fun, Optional, Optionals, Type } from '@ephox/katamari';
+import { Css, PredicateFind, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
 
-import Editor from '../api/Editor';
+import type Editor from '../api/Editor';
 import Env from '../api/Env';
 import * as Options from '../api/Options';
 import Delay from '../api/util/Delay';
-import { EditorEvent } from '../api/util/EventDispatcher';
+import type { EditorEvent } from '../api/util/EventDispatcher';
 import Tools from '../api/util/Tools';
 import VK from '../api/util/VK';
 import * as CaretContainer from '../caret/CaretContainer';
+import * as CaretFinder from '../caret/CaretFinder';
+import { CaretPosition } from '../caret/CaretPosition';
+import * as SymulateDelete from '../delete/SymulateDelete';
+import { getClientRects, type NodeClientRect } from '../dom/Dimensions';
+import * as ElementType from '../dom/ElementType';
+import { isListItem } from '../dom/ElementType';
 import * as Empty from '../dom/Empty';
 import * as Rtc from '../Rtc';
 
@@ -29,6 +36,7 @@ const Quirks = (editor: Editor): Quirks => {
   const browser = Env.browser;
   const isGecko = browser.isFirefox();
   const isWebKit = browser.isChromium() || browser.isSafari();
+  const isSafari = browser.isSafari();
   const isiOS = Env.deviceType.isiPhone() || Env.deviceType.isiPad();
   const isMac = Env.os.isMacOS() || Env.os.isiOS();
 
@@ -104,15 +112,13 @@ const Quirks = (editor: Editor): Quirks => {
 
         // Manually empty the editor
         e.preventDefault();
-        editor.setContent('');
-
-        if (body.firstChild && dom.isBlock(body.firstChild)) {
-          editor.selection.setCursorLocation(body.firstChild, 0);
-        } else {
-          editor.selection.setCursorLocation(body, 0);
+        if (SymulateDelete.symulateDelete(editor, keyCode === DELETE, () => editor.setContent(''))) {
+          if (body.firstChild && dom.isBlock(body.firstChild)) {
+            editor.selection.setCursorLocation(body.firstChild, 0);
+          } else {
+            editor.selection.setCursorLocation(body, 0);
+          }
         }
-
-        editor.nodeChanged();
       }
     });
   };
@@ -147,7 +153,11 @@ const Quirks = (editor: Editor): Quirks => {
 
         if (e.target === editor.getDoc().documentElement) {
           rng = selection.getRng();
-          editor.getBody().focus();
+          // TINY-12245: this is needed to avoid the scroll back to the top when the content is scrolled, there is no selection and the user is clicking on a non selectable editor element
+          // example content scrolled by browser search and user click on the horizontal scroll bar
+          if (editor.getDoc().getSelection()?.anchorNode !== null) {
+            editor.getBody().focus();
+          }
 
           if (e.type === 'mousedown') {
             if (CaretContainer.isCaretContainer(rng.startContainer)) {
@@ -246,6 +256,37 @@ const Quirks = (editor: Editor): Quirks => {
         e.preventDefault();
         selection.select(target);
       }
+    });
+  };
+
+  /**
+   * Fixes a Gecko a selection bug where if there is a floating image
+   * more details here: https://bugzilla.mozilla.org/show_bug.cgi?id=1959606
+   */
+  const fixFirefoxImageSelection = () => {
+    const isEditableImage = (node: Node): node is HTMLImageElement => node.nodeName === 'IMG' && editor.dom.isEditable(node);
+
+    editor.on('mousedown', (e) => {
+      Optionals.lift2(Optional.from(e.clientX), Optional.from(e.clientY), (clientX, clientY) => {
+        const caretPos = editor.getDoc().caretPositionFromPoint(clientX, clientY);
+        const img = caretPos?.offsetNode?.childNodes[caretPos.offset - (caretPos.offset > 0 ? 1 : 0)] || caretPos?.offsetNode;
+
+        if (Type.isNonNullable(img) && isEditableImage(img)) {
+          const rect = img.getBoundingClientRect();
+          e.preventDefault();
+
+          if (!editor.hasFocus()) {
+            editor.focus();
+          }
+
+          editor.selection.select(img);
+          if (e.clientX < rect.left || e.clientY < rect.top) {
+            editor.selection.collapse(true);
+          } else if (e.clientX > rect.right || e.clientY > rect.bottom) {
+            editor.selection.collapse(false);
+          }
+        }
+      });
     });
   };
 
@@ -367,6 +408,34 @@ const Quirks = (editor: Editor): Quirks => {
         rng.setStart(container, 0);
         rng.setEnd(container, 0);
         selection.setRng(rng);
+      }
+    });
+  };
+
+  /*
+   * Firefox-specific fix for arrow key navigation. In Firefox, users can't move the caret out of a
+   * `<figcaption>` element using the left and right arrow keys. This function handles those keystrokes
+   * to allow navigation to the previous/next sibling of the figure element.
+  */
+  const arrowInFigcaption = () => {
+    const isFigcaption = SugarNode.isTag('figcaption');
+    editor.on('keydown', (e) => {
+      if (e.keyCode === VK.LEFT || e.keyCode === VK.RIGHT) {
+        const currentNode = SugarElement.fromDom(editor.selection.getNode());
+        if (isFigcaption(currentNode) && editor.selection.isCollapsed()) {
+          Traverse.parent(currentNode).bind((parent) => {
+            if (editor.selection.getRng().startOffset === 0 && e.keyCode === VK.LEFT) {
+              return Traverse.prevSibling(parent);
+            } else if (editor.selection.getRng().endOffset === currentNode.dom.textContent?.length && e.keyCode === VK.RIGHT) {
+              return Traverse.nextSibling(parent);
+            } else {
+              return Optional.none();
+            }
+          }).each((targetSibling) => {
+            editor.selection.setCursorLocation(targetSibling.dom, 0);
+          });
+        }
+
       }
     });
   };
@@ -644,6 +713,55 @@ const Quirks = (editor: Editor): Quirks => {
     });
   };
 
+  /**
+   * this is needed to manage the difference between
+   * ```
+   * <li><span class="fake">a</span><div>b</div></li>
+   * ```
+   * and
+   * ```
+   * <li><span class="fake">a</span> <div>b</div></li>
+   * ```
+   * since if the indentation of the HTML has a new line it creates a fake child in the `li` that is an empty text
+   * it's check it trying to get the rects and if it can't it means that it's the false unwanted new line
+  **/
+  const isValidSibling = (el: SugarElement<Node>): boolean =>
+    getClientRects([ el.dom ]).length > 0;
+
+  const firstBlockChildOrNewLine = (target: SugarElement<Node>) =>
+    PredicateFind.child(target, (child) => ElementType.isBr(child) || SugarNode.isElement(child) && Css.get(child, 'display') === 'block');
+
+  const clickAfterEl = (clientX: number, clientY: number, rect: NodeClientRect): boolean =>
+    clientX >= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+
+  /**
+   * In Chrome in a `LI` that contains a block element and where the first child is an inline element
+   * clicking on the right side of the first child the carret goes at the start of the element instead that in the end of it
+   * issue: https://issues.chromium.org/issues/40767343
+  **/
+
+  const fixInLISelection = () => {
+    editor.on('mousedown', (e) => {
+      const target = SugarElement.fromDom(e.target);
+      if (isListItem(target)) {
+        firstBlockChildOrNewLine(target).each((firstBlock) => {
+          const prevSiblings = Traverse.prevSiblings(firstBlock);
+
+          Arr.findLastIndex(prevSiblings, isValidSibling).bind((lastI) => Arr.get(prevSiblings, lastI))
+            .each((lastInlineBeforeBlock) => {
+              if (Arr.get(getClientRects([ lastInlineBeforeBlock.dom ]), 0).exists((rect) => clickAfterEl(e.clientX, e.clientY, rect))) {
+                CaretFinder.prevPosition(target.dom, CaretPosition(firstBlock.dom, 0)).each((pos) => {
+                  e.preventDefault();
+                  editor.focus();
+                  editor.selection.setRng(pos.toRange());
+                });
+              }
+            });
+        });
+      }
+    });
+  };
+
   // No-op since Mozilla seems to have fixed the caret repaint issues
   const refreshContentEditable = Fun.noop;
 
@@ -699,6 +817,9 @@ const Quirks = (editor: Editor): Quirks => {
       disableBackspaceIntoATable();
       removeAppleInterchangeBrs();
 
+      if (!isSafari) {
+        fixInLISelection();
+      }
       // touchClickEvent();
 
       // iOS
@@ -713,6 +834,8 @@ const Quirks = (editor: Editor): Quirks => {
 
     // Gecko
     if (isGecko) {
+      arrowInFigcaption();
+      fixFirefoxImageSelection();
       removeHrOnBackspace();
       focusBody();
       removeStylesWhenDeletingAcrossBlockElements();

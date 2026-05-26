@@ -2,22 +2,18 @@ import { Assertions, Keys } from '@ephox/agar';
 import { context, describe, it } from '@ephox/bedrock-client';
 import { TinyAssertions, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 
-import Editor from 'tinymce/core/api/Editor';
+import type Editor from 'tinymce/core/api/Editor';
 import AdvListPlugin from 'tinymce/plugins/advlist/Plugin';
 import ListsPlugin from 'tinymce/plugins/lists/Plugin';
 
 describe('browser.tinymce.plugins.advlist.ListStyleAliasTest', () => {
   const pClickOnSplitListBtnFor = async (editor: Editor, label: string) => {
-    TinyUiActions.clickOnToolbar(editor, '[aria-label="' + label + '"] > .tox-tbtn + .tox-split-button__chevron');
+    TinyUiActions.clickOnToolbar(editor, `button.tox-split-button__chevron[aria-label="${label}"]`);
     return TinyUiActions.pWaitForUi(editor, '.tox-menu.tox-selected-menu');
   };
 
-  const clickListBtnFor = (editor: Editor, label: string, isSplitBtn: boolean) => {
-    if (isSplitBtn) {
-      TinyUiActions.clickOnToolbar(editor, `[aria-label="${label}"] > .tox-tbtn`);
-    } else {
-      TinyUiActions.clickOnToolbar(editor, `[aria-label="${label}"]`);
-    }
+  const clickListBtnFor = (editor: Editor, label: string) => {
+    TinyUiActions.clickOnToolbar(editor, `button[aria-label="${label}"]`);
   };
 
   const pClickAndAssertCheckedListStyleType = async (editor: Editor, styleTypeLabel: string) => {
@@ -29,6 +25,8 @@ describe('browser.tinymce.plugins.advlist.ListStyleAliasTest', () => {
       'div.tox-collection__item[aria-checked="true"]': 1,
       [`div.tox-collection__item[aria-checked="true"][aria-label="${styleTypeLabel}"]`]: 1,
     }, menu);
+
+    TinyUiActions.keyup(editor, Keys.escape());
   };
 
   const pTestCheckedListStyleType = async (editor: Editor, styleTypeLabel: string, styleType: string) => {
@@ -92,7 +90,7 @@ describe('browser.tinymce.plugins.advlist.ListStyleAliasTest', () => {
       ].join(''));
       TinySelections.setCursor(editor, [ 0, 0, 0 ], 1);
 
-      clickListBtnFor(editor, 'Numbered list', true);
+      clickListBtnFor(editor, 'Numbered list');
 
       TinyAssertions.assertContent(editor, [
         '<p>abc</p>\n',
@@ -117,7 +115,7 @@ describe('browser.tinymce.plugins.advlist.ListStyleAliasTest', () => {
       TinySelections.setCursor(editor, [ 0, 0, 1, 0 ], 1);
 
       await pClickAndAssertCheckedListStyleType(editor, 'Lower Alpha');
-      clickListBtnFor(editor, 'Numbered list', true);
+      clickListBtnFor(editor, 'Numbered list');
 
       TinyAssertions.assertContent(editor, [
         `<ol style="list-style-type: lower-latin;">\n`,
@@ -139,7 +137,6 @@ describe('browser.tinymce.plugins.advlist.ListStyleAliasTest', () => {
         '</ol>'
       ].join(''));
       TinySelections.setCursor(editor, [ 0, 0, 0 ], 1);
-
       await pClickOnSplitListBtnFor(editor, 'Numbered list');
       TinyUiActions.clickOnUi(editor, 'div.tox-selected-menu[role="menu"] div[aria-label="Lower Alpha"]');
 

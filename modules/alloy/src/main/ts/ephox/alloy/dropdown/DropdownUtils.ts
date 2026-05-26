@@ -9,19 +9,21 @@ import { Positioning } from '../api/behaviour/Positioning';
 import { Receiving } from '../api/behaviour/Receiving';
 import { Representing } from '../api/behaviour/Representing';
 import { Sandboxing } from '../api/behaviour/Sandboxing';
-import { LazySink } from '../api/component/CommonTypes';
-import { AlloyComponent } from '../api/component/ComponentApi';
+import type { LazySink } from '../api/component/CommonTypes';
+import type { AlloyComponent } from '../api/component/ComponentApi';
 import { SketchBehaviours } from '../api/component/SketchBehaviours';
-import { AlloySpec, SketchSpec } from '../api/component/SpecTypes';
-import { TieredData, tieredMenu as TieredMenu } from '../api/ui/TieredMenu';
+import type { AlloySpec, SketchSpec } from '../api/component/SpecTypes';
+import * as AlloyTriggers from '../api/events/AlloyTriggers';
+import { type TieredData, tieredMenu as TieredMenu } from '../api/ui/TieredMenu';
 import * as AriaControls from '../aria/AriaControls';
+import type { NativeSimulatedEvent } from '../events/SimulatedEvent';
 import * as InternalSink from '../parts/InternalSink';
-import { HotspotAnchorSpec } from '../positioning/mode/Anchoring';
+import type { HotspotAnchorSpec } from '../positioning/mode/Anchoring';
 import * as Tagger from '../registry/Tagger';
 import * as Dismissal from '../sandbox/Dismissal';
 import * as Reposition from '../sandbox/Reposition';
-import { CommonDropdownDetail } from '../ui/types/DropdownTypes';
-import { HighlightOnOpen } from '../ui/types/TieredMenuTypes';
+import type { CommonDropdownDetail } from '../ui/types/DropdownTypes';
+import type { HighlightOnOpen } from '../ui/types/TieredMenuTypes';
 
 type OnOpenSyncFunc = (sandbox: AlloyComponent) => void;
 type MapFetch = (tdata: Optional<TieredData>) => Optional<TieredData>;
@@ -65,6 +67,16 @@ const openF = (
   const futureData: Future<Optional<TieredData>> = fetch(detail, mapFetch, component);
 
   const getLazySink = getSink(component, detail);
+
+  // When Tab or Shift+Tab bubbles up from inside an open menu, close the menu,
+  // refocus the trigger, and re-emit the keydown so the trigger's parent
+  // (toolbar, menubar, etc.) handles it via its own Keying config.
+  const onTabOutOfMenu = (_tmenu: AlloyComponent, se: NativeSimulatedEvent<KeyboardEvent>): Optional<boolean> => {
+    Focusing.focus(component);
+    AlloyTriggers.emitWith(component, 'keydown', { raw: se.event.raw });
+    Sandboxing.close(sandbox);
+    return Optional.some(true);
+  };
 
   // TODO: Make this potentially a single menu also
   return futureData.map((tdata) => tdata.bind((data) => {
@@ -116,7 +128,10 @@ const openF = (
         Focusing.focus(component);
         Sandboxing.close(sandbox);
         return Optional.some(true);
-      }
+      },
+
+      onTab: onTabOutOfMenu,
+      onShiftTab: onTabOutOfMenu
     }));
   }));
 };
@@ -234,6 +249,7 @@ const makeSandbox = (
     if (extras !== undefined && extras.onOpen !== undefined) {
       extras.onOpen(component, menu);
     }
+    TieredMenu.repositionMenus(menu);
   };
 
   const onClose = (component: AlloyComponent, menu: AlloyComponent) => {

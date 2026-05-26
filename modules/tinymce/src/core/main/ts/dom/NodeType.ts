@@ -107,10 +107,21 @@ const isEditingHost = (node: Node): node is HTMLElement => isHTMLElement(node) &
 
 const isTableCell = matchNodeNames<HTMLTableCellElement>([ 'td', 'th' ]);
 const isTableCellOrCaption = matchNodeNames<HTMLTableCellElement>([ 'td', 'th', 'caption' ]);
+const isTemplate = matchNodeName<HTMLTemplateElement>('template');
 const isMedia = matchNodeNames<HTMLElement>([ 'video', 'audio', 'object', 'embed' ]);
 const isListItem = matchNodeName<HTMLLIElement>('li');
 const isDetails = matchNodeName<HTMLDetailsElement>('details');
 const isSummary = matchNodeName<HTMLElement>('summary');
+
+const ucVideoNodeName = 'uc-video' as const;
+
+interface UcVideo extends HTMLElement {
+  nodeName: typeof ucVideoNodeName;
+  width: number;
+  height: number;
+}
+
+const isUcVideo = matchNodeName<UcVideo>(ucVideoNodeName);
 
 export {
   isText,
@@ -139,8 +150,12 @@ export {
   isBogus,
   isBogusAll,
   isTable,
+  isTemplate,
   isTextareaOrInput,
   isListItem,
   isDetails,
-  isSummary
+  isSummary,
+  ucVideoNodeName,
+  type UcVideo,
+  isUcVideo
 };

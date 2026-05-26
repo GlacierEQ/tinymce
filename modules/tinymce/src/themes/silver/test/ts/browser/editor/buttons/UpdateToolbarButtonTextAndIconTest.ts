@@ -4,10 +4,10 @@ import { Css, SugarBody, SugarElement, Traverse } from '@ephox/sugar';
 import { TinyHooks, TinyUi, TinyUiActions } from '@ephox/wrap-mcagar';
 import { assert } from 'chai';
 
-import Editor from 'tinymce/core/api/Editor';
-import { NodeChangeEvent } from 'tinymce/core/api/EventTypes';
-import { Menu } from 'tinymce/core/api/ui/Ui';
-import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
+import type Editor from 'tinymce/core/api/Editor';
+import type { NodeChangeEvent } from 'tinymce/core/api/EventTypes';
+import type { Menu } from 'tinymce/core/api/ui/Ui';
+import type { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
 
 describe('browser.tinymce.themes.silver.editor.buttons.UpdateToolbarButtonTextAndIconTest', () => {
 
@@ -114,7 +114,7 @@ describe('browser.tinymce.themes.silver.editor.buttons.UpdateToolbarButtonTextAn
 
   it('TINY-9268: toolbar split button can update its text when clicking on it or one of its items', async () => {
     const selectorForToolbarButtonWithLabel = (label: string) =>
-      `.tox-tbtn.tox-tbtn--select:contains("${label}")`;
+      `.tox-split-button__main:contains("${label}")`;
     const getChevron = (label: string) => {
       const button = UiFinder.findIn(SugarBody.body(), selectorForToolbarButtonWithLabel(label)).getOrDie();
       return UiFinder.findIn(Traverse.parent(button).getOrDie(), '.tox-split-button__chevron').getOrDie();

@@ -1,21 +1,24 @@
 import { Arr, Optional, Type } from '@ephox/katamari';
+import { DomDescent } from '@ephox/phoenix';
 import { ContentEditable, Insert, PredicateFilter, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
 
-import DOMUtils from '../api/dom/DOMUtils';
+import type DOMUtils from '../api/dom/DOMUtils';
 import DomTreeWalker from '../api/dom/TreeWalker';
-import Editor from '../api/Editor';
-import { SchemaMap } from '../api/html/Schema';
+import type Editor from '../api/Editor';
+import type { SchemaMap } from '../api/html/Schema';
 import * as Options from '../api/Options';
-import { EditorEvent } from '../api/util/EventDispatcher';
+import type { EditorEvent } from '../api/util/EventDispatcher';
 import Tools from '../api/util/Tools';
 import { findPreviousBr, isAfterBr } from '../caret/CaretBr';
 import * as CaretContainer from '../caret/CaretContainer';
 import CaretPosition from '../caret/CaretPosition';
 import { isAfterTable } from '../caret/CaretPositionPredicates';
+import { isList, isListItem } from '../dom/ElementType';
 import * as NodeType from '../dom/NodeType';
 import * as NormalizeRange from '../selection/NormalizeRange';
 import { isWhitespaceText } from '../text/Whitespace';
 import * as Zwsp from '../text/Zwsp';
+
 import * as InsertDetailsNewLine from './InsertDetailsNewLine';
 import * as InsertLi from './InsertLi';
 import * as NewLineUtils from './NewLineUtils';
@@ -288,6 +291,19 @@ const insert = (editor: Editor, evt?: EditorEvent<KeyboardEvent>): void => {
     return true;
   };
 
+  const isInsideLiBeforeAList = (newBlock: SugarElement<Element>) => {
+    const nextSibling = Traverse.firstChild(newBlock).bind(Traverse.nextSibling);
+    return isListItem(newBlock) && nextSibling.exists(isList);
+  };
+
+  const trimEmptySpacesInLeftLeaf = (newBlock: Element) => {
+    const leaf = DomDescent.toLeaf(SugarElement.fromDom(newBlock), 0).element;
+
+    if (SugarNode.isText(leaf) && dom.isEmpty(leaf.dom)) {
+      leaf.dom.remove();
+    }
+  };
+
   const insertNewBlockAfter = () => {
     let block: Element;
     // If the caret is at the end of a header we produce a P tag after it similar to Word unless we are in a hgroup
@@ -429,9 +445,19 @@ const insert = (editor: Editor, evt?: EditorEvent<KeyboardEvent>): void => {
     trimZwsp(fragment);
     trimLeadingLineBreaks(fragment);
     newBlock = fragment.firstChild as Element;
-    dom.insertAfter(fragment, parentBlock);
-    trimInlineElementsOnLeftSideOfBlock(dom, nonEmptyElementsMap, newBlock);
-    addBrToBlockIfNeeded(dom, parentBlock);
+    if (parentBlock === newBlock) { // Can't add yourself to yourself. Additionally the newBlock is removed from the DOM earlier, so even if you could, it'd still not work.
+      if (Type.isNonNullable(parentBlockParent)) {
+        dom.insertAfter(fragment, parentBlockParent);
+      }
+    } else {
+      dom.insertAfter(fragment, parentBlock);
+    }
+    if (!isInsideLiBeforeAList(SugarElement.fromDom(newBlock))) {
+      trimInlineElementsOnLeftSideOfBlock(dom, nonEmptyElementsMap, newBlock);
+      addBrToBlockIfNeeded(dom, parentBlock);
+    } else {
+      trimEmptySpacesInLeftLeaf(newBlock);
+    }
 
     if (dom.isEmpty(parentBlock)) {
       NewLineUtils.emptyBlock(parentBlock);

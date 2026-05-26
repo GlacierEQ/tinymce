@@ -1,15 +1,15 @@
 import {
-  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Composing, Form as AlloyForm, GuiFactory, Keying, Receiving, Representing,
-  SketchSpec, Tabbar as AlloyTabbar, TabbarTypes, TabSection as AlloyTabSection, Tabstopping
+  AddEventsBehaviour, type AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Composing, Form as AlloyForm, GuiFactory, Keying, Receiving, Representing,
+  type SketchSpec, Tabbar as AlloyTabbar, type TabbarTypes, TabSection as AlloyTabSection, Tabstopping
 } from '@ephox/alloy';
 import { Objects } from '@ephox/boulder';
-import { Dialog } from '@ephox/bridge';
+import type { Dialog } from '@ephox/bridge';
 import { Arr, Cell, Fun, Merger, Optional } from '@ephox/katamari';
 
 import { toValidValues } from 'tinymce/themes/silver/ui/general/FormValues';
 import { interpretInForm } from 'tinymce/themes/silver/ui/general/UiFactory';
 
-import { UiFactoryBackstage } from '../../backstage/Backstage';
+import type { UiFactoryBackstage } from '../../backstage/Backstage';
 import * as DialogTabHeight from '../alien/DialogTabHeight';
 import * as RepresentingConfigs from '../alien/RepresentingConfigs';
 import { formTabChangeEvent } from '../general/FormEvents';
@@ -93,7 +93,9 @@ export const renderTabPanel = (spec: TabPanelSpec, dialogData: Dialog.DialogData
   });
 
   // Assign fixed height or variable height to the tabs
-  const tabMode = DialogTabHeight.smartMode(allTabs);
+  const tabMode = spec.dynamicHeight
+    ? DialogTabHeight.naiveMode(allTabs) // Height is determined by the content of the tab, which may cause layout shifts when switching tabs.
+    : DialogTabHeight.smartMode(allTabs); // Height is determined by the tallest tab, which prevents layout shifts but may cause excessive whitespace in shorter tabs.
 
   return AlloyTabSection.sketch({
     dom: {

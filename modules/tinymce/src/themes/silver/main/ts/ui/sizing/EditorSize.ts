@@ -1,9 +1,10 @@
-import { Optional } from '@ephox/katamari';
+import type { Optional } from '@ephox/katamari';
 import { SugarElement } from '@ephox/sugar';
 
-import Editor from 'tinymce/core/api/Editor';
+import type Editor from 'tinymce/core/api/Editor';
 
 import * as Options from '../../api/Options';
+
 import * as Utils from './Utils';
 
 export const getHeight = (editor: Editor): Optional<number> => {

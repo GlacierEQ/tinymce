@@ -1,8 +1,9 @@
 import { FieldSchema, StructureSchema } from '@ephox/boulder';
-import { Result } from '@ephox/katamari';
+import type { Result } from '@ephox/katamari';
 
 import * as ComponentSchema from '../../core/ComponentSchema';
-import { BodyComponent, BodyComponentSpec } from './BodyComponent';
+
+import type { BodyComponent, BodyComponentSpec } from './BodyComponent';
 import { itemSchema } from './Panel';
 
 export interface TabSpec {
@@ -14,6 +15,7 @@ export interface TabSpec {
 export interface TabPanelSpec {
   type: 'tabpanel';
   tabs: TabSpec[];
+  dynamicHeight?: boolean;
 }
 
 export interface Tab {
@@ -25,6 +27,7 @@ export interface Tab {
 export interface TabPanel {
   type: 'tabpanel';
   tabs: Tab[];
+  dynamicHeight: boolean;
 }
 
 export const tabFields = [
@@ -35,7 +38,8 @@ export const tabFields = [
 
 export const tabPanelFields = [
   ComponentSchema.type,
-  FieldSchema.requiredArrayOfObj('tabs', tabFields)
+  FieldSchema.requiredArrayOfObj('tabs', tabFields),
+  FieldSchema.defaultedBoolean('dynamicHeight', false)
 ];
 
 export const tabPanelSchema = StructureSchema.objOf(tabPanelFields);

@@ -1,9 +1,10 @@
-import { AlloyEvents, Focusing, GuiFactory, Memento, ModalDialog } from '@ephox/alloy';
+import { AlloyEvents, AriaDescribe, Focusing, GuiFactory, Memento, ModalDialog } from '@ephox/alloy';
 import { Optional } from '@ephox/katamari';
 
-import { UiFactoryBackstage } from '../../backstage/Backstage';
+import type { UiFactoryBackstage } from '../../backstage/Backstage';
 import { renderFooterButton } from '../general/Button';
-import { formCancelEvent, FormCancelEvent, formSubmitEvent, FormSubmitEvent } from '../general/FormEvents';
+import { formCancelEvent, type FormCancelEvent, formSubmitEvent, type FormSubmitEvent } from '../general/FormEvents';
+
 import * as Dialogs from './Dialogs';
 
 interface ConfirmDialogApi {
@@ -49,6 +50,7 @@ export const setup = (backstage: UiFactoryBackstage): ConfirmDialogApi => {
 
     const confirmDialog = GuiFactory.build(
       Dialogs.renderDialog({
+        role: 'alertdialog',
         lazySink: () => sharedBackstage.getSink(),
         header: Dialogs.hiddenHeader(titleSpec, closeSpec),
         body: Dialogs.pBodyMessage(message, sharedBackstage.providers),
@@ -62,7 +64,11 @@ export const setup = (backstage: UiFactoryBackstage): ConfirmDialogApi => {
         extraStyles: { },
         dialogEvents: [
           AlloyEvents.run<FormCancelEvent>(formCancelEvent, () => closeDialog(false)),
-          AlloyEvents.run<FormSubmitEvent>(formSubmitEvent, () => closeDialog(true))
+          AlloyEvents.run<FormSubmitEvent>(formSubmitEvent, () => closeDialog(true)),
+          AlloyEvents.runOnAttached((c) => {
+            const bodyElm = ModalDialog.getBody(c);
+            AriaDescribe.describedBy(c.element, bodyElm.element);
+          }),
         ],
         eventOrder: { }
       })

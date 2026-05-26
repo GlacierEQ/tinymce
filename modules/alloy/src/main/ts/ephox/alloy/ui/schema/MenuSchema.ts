@@ -8,14 +8,14 @@ import { Representing } from '../../api/behaviour/Representing';
 import { field as SketchBehaviourField } from '../../api/component/SketchBehaviours';
 import * as FocusManagers from '../../api/focus/FocusManagers';
 import * as Fields from '../../data/Fields';
-import { FlatgridConfigSpec, MatrixConfigSpec, MenuConfigSpec } from '../../keying/KeyingModeTypes';
+import type { FlatgridConfigSpec, MatrixConfigSpec, MenuConfigSpec } from '../../keying/KeyingModeTypes';
 import ItemType from '../../menu/build/ItemType';
 import SeparatorType from '../../menu/build/SeparatorType';
 import WidgetType from '../../menu/build/WidgetType';
 import * as PartType from '../../parts/PartType';
 import * as Tagger from '../../registry/Tagger';
-import { ItemSpec, WidgetItemSpec } from '../types/ItemTypes';
-import { MenuDetail, MenuGridMovement, MenuMatrixMovement, MenuNormalMovement } from '../types/MenuTypes';
+import type { ItemSpec, WidgetItemSpec } from '../types/ItemTypes';
+import type { MenuDetail, MenuGridMovement, MenuMatrixMovement, MenuNormalMovement } from '../types/MenuTypes';
 
 const itemSchema = StructureSchema.choose(
   'type',
@@ -46,10 +46,9 @@ const configureMatrix = (detail: MenuDetail, movementInfo: MenuMatrixMovement): 
   focusManager: detail.focusManager
 });
 
-const configureMenu = (detail: MenuDetail, movementInfo: MenuNormalMovement): MenuConfigSpec => ({
+const configureMenu = (detail: MenuDetail, _movementInfo: MenuNormalMovement): MenuConfigSpec => ({
   mode: 'menu',
   selector: '.' + detail.markers.item,
-  moveOnTab: movementInfo.moveOnTab,
   focusManager: detail.focusManager
 });
 
@@ -95,12 +94,7 @@ const schema = Fun.constant([
   SketchBehaviourField('menuBehaviours', [ Highlighting, Representing, Composing, Keying ]),
 
   FieldSchema.defaultedOf('movement', {
-    // When you don't specify movement for a Menu, this is what you get
-    // a "menu" type of movement that moves on tab. If you want finer-grained
-    // control, like disabling moveOnTab, then you need to specify
-    // your entire movement configuration when creating your MenuSpec.
-    mode: 'menu',
-    moveOnTab: true
+    mode: 'menu'
   }, StructureSchema.choose(
     'mode',
     {
@@ -114,7 +108,6 @@ const schema = Fun.constant([
         FieldSchema.defaulted('previousSelector', Optional.none),
       ],
       menu: [
-        FieldSchema.defaulted('moveOnTab', true),
         Fields.output('config', configureMenu)
       ]
     }

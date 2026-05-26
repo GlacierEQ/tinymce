@@ -1,15 +1,16 @@
-import { KeyingConfigSpec, MenuTypes } from '@ephox/alloy';
-import { Toolbar } from '@ephox/bridge';
+import type { KeyingConfigSpec, MenuTypes } from '@ephox/alloy';
+import type { Toolbar } from '@ephox/bridge';
 import { Optional } from '@ephox/katamari';
 import { SelectorFind } from '@ephox/sugar';
 
 import { colorClass, selectableClass } from '../item/ItemClasses';
+
 import { markers as getMenuMarkers } from './MenuParts';
 
 export const deriveMenuMovement = (columns: number | 'auto', presets: Toolbar.PresetTypes): MenuTypes.MenuMovementSpec => {
   const menuMarkers = getMenuMarkers(presets);
   if (columns === 1) {
-    return { mode: 'menu', moveOnTab: true } as MenuTypes.MenuNormalMovementSpec;
+    return { mode: 'menu' } as MenuTypes.MenuNormalMovementSpec;
   } else if (columns === 'auto') {
     return {
       mode: 'grid',
@@ -44,7 +45,6 @@ export const deriveCollectionMovement = (columns: number | 'auto', presets: Tool
   if (columns === 1) {
     return {
       mode: 'menu',
-      moveOnTab: false,
       selector: '.tox-collection__item'
     };
   } else if (columns === 'auto') {

@@ -1,12 +1,15 @@
 import { Arr, Fun, Obj, Optional, Strings, Type } from '@ephox/katamari';
-import { Attribute, NodeTypes, Remove, Replication, SugarElement } from '@ephox/sugar';
-import createDompurify, { Config, DOMPurify, UponSanitizeAttributeHookEvent, UponSanitizeElementHookEvent } from 'dompurify';
+import { Attribute, NodeTypes, Remove, Replication, SugarElement, TextContent } from '@ephox/sugar';
+import createDompurify, { type Config, type DOMPurify, type UponSanitizeAttributeHookEvent, type UponSanitizeElementHookEvent } from 'dompurify';
 
-import { DomParserSettings } from '../api/html/DomParser';
-import Schema from '../api/html/Schema';
+import type { DomParserSettings } from '../api/html/DomParser';
+import type Schema from '../api/html/Schema';
 import Tools from '../api/util/Tools';
 import * as URI from '../api/util/URI';
+import * as ElementType from '../dom/ElementType';
 import * as NodeType from '../dom/NodeType';
+
+import * as KeepHtmlComments from './KeepHtmlComments';
 import * as Namespace from './Namespace';
 
 export type MimeType = 'text/html' | 'application/xhtml+xml';
@@ -25,9 +28,15 @@ const processNode = (node: Node, settings: DomParserSettings, schema: Schema, sc
   const validate = settings.validate;
   const specialElements = schema.getSpecialElements();
 
-  // Pad conditional comments if they aren't allowed
-  if (node.nodeType === NodeTypes.COMMENT && !settings.allow_conditional_comments && /^\[if/i.test(node.nodeValue ?? '')) {
-    node.nodeValue = ' ' + node.nodeValue;
+  if (node.nodeType === NodeTypes.COMMENT) {
+    // Pad conditional comments if they aren't allowed
+    if (!settings.allow_conditional_comments && /^\[if/i.test(node.nodeValue ?? '')) {
+      node.nodeValue = ' ' + node.nodeValue;
+    }
+
+    if (settings.sanitize && settings.allow_html_in_comments && Type.isString(node.nodeValue)) {
+      node.nodeValue = KeepHtmlComments.encodeData(node.nodeValue);
+    }
   }
 
   const lcTagName = evt?.tagName ?? node.nodeName.toLowerCase();
@@ -46,6 +55,20 @@ const processNode = (node: Node, settings: DomParserSettings, schema: Schema, sc
 
   // Construct the sugar element wrapper
   const element = SugarElement.fromDom(node) as SugarElement<Element>;
+
+  if (settings.sanitize) {
+    // TINY-9655: Preserve the content of script and style tags if they are valid elements in the schema
+    const shouldKeepContent = (ElementType.isScript(element) && schema.isValid('script')) || (ElementType.isStyle(element) && schema.isValid('style'));
+    if (shouldKeepContent) {
+      Optional.from(TextContent.get(element)).each((content) => Attribute.set(element, 'data-mce-tmp', content));
+    }
+
+    // TINY-9655: Clear innerHTML of script and iframe tags to prevent DOMPurify from removing them entirely
+    const shouldClearContent = ElementType.isIframe(element) && schema.isValid('iframe');
+    if (shouldKeepContent || shouldClearContent) {
+      Remove.empty(element);
+    }
+  }
 
   // Determine if we're dealing with an internal attribute
   const isInternalElement = Attribute.has(element, internalElementAttr);
@@ -116,8 +139,7 @@ const processAttr = (ele: Element, settings: DomParserSettings, schema: Schema, 
 
   if (evt.keepAttr) {
     evt.allowedAttributes[attrName] = true;
-
-    if (isBooleanAttribute(attrName, schema)) {
+    if (isBooleanAttributeOfNonCustomElement(attrName, schema, ele.nodeName)) {
       evt.attrValue = attrName;
     }
 
@@ -144,8 +166,8 @@ const shouldKeepAttribute = (settings: DomParserSettings, schema: Schema, scope:
 const isRequiredAttributeOfInternalElement = (ele: Element, attrName: string): boolean =>
   ele.hasAttribute(internalElementAttr) && (attrName === 'id' || attrName === 'class' || attrName === 'style');
 
-const isBooleanAttribute = (attrName: string, schema: Schema): boolean =>
-  attrName in schema.getBoolAttrs();
+const isBooleanAttributeOfNonCustomElement = (attrName: string, schema: Schema, nodeName: string): boolean =>
+  attrName in schema.getBoolAttrs() && !Obj.has(schema.getCustomElements(), nodeName.toLowerCase());
 
 const filterAttributes = (ele: Element, settings: DomParserSettings, schema: Schema, scope: Namespace.NamespaceType): void => {
   const { attributes } = ele;
@@ -155,9 +177,21 @@ const filterAttributes = (ele: Element, settings: DomParserSettings, schema: Sch
     const attrValue = attr.value;
     if (!shouldKeepAttribute(settings, schema, scope, ele.tagName.toLowerCase(), attrName, attrValue) && !isRequiredAttributeOfInternalElement(ele, attrName)) {
       ele.removeAttribute(attrName);
-    } else if (isBooleanAttribute(attrName, schema)) {
+    } else if (isBooleanAttributeOfNonCustomElement(attrName, schema, ele.nodeName)) {
       ele.setAttribute(attrName, attrName);
     }
+  }
+};
+
+const restoreValidContent = (node: Node) => {
+  // Construct the sugar element wrapper
+  const element = SugarElement.fromDom(node) as SugarElement<Element>;
+
+  if (ElementType.isScript(element) || ElementType.isStyle(element)) {
+    Attribute.getOpt(element, 'data-mce-tmp').each((content) => {
+      TextContent.set(element, content);
+      Attribute.remove(element, 'data-mce-tmp');
+    });
   }
 };
 
@@ -169,6 +203,10 @@ const setupPurify = (settings: DomParserSettings, schema: Schema, namespaceTrack
     processNode(ele, settings, schema, namespaceTracker.track(ele), evt);
   });
 
+  purify.addHook('afterSanitizeElements', (ele) => {
+    restoreValidContent(ele);
+  });
+
   // Let's do the same thing for attributes
   purify.addHook('uponSanitizeAttribute', (ele, evt) => {
     processAttr(ele, settings, schema, namespaceTracker.current(), evt);
@@ -178,17 +216,14 @@ const setupPurify = (settings: DomParserSettings, schema: Schema, namespaceTrack
 };
 
 const getPurifyConfig = (settings: DomParserSettings, mimeType: MimeType): Config => {
-  // Current dompurify types only cover up to 3.0.5 which does not include this new setting
-  const basePurifyConfig: Config & { SAFE_FOR_XML: boolean } = {
+  const basePurifyConfig: Config = {
     IN_PLACE: true,
     ALLOW_UNKNOWN_PROTOCOLS: true,
     // Deliberately ban all tags and attributes by default, and then un-ban them on demand in hooks
     // #comment and #cdata-section are always allowed as they aren't controlled via the schema
     // body is also allowed due to the DOMPurify checking the root node before sanitizing
-    ALLOWED_TAGS: [ '#comment', '#cdata-section', 'body' ],
-    ALLOWED_ATTR: [],
-    // TINY-11332: New settings for dompurify 3.1.7
-    SAFE_FOR_XML: false
+    ALLOWED_TAGS: [ '#comment', '#cdata-section', 'body', 'html' ],
+    ALLOWED_ATTR: []
   };
   const config = { ...basePurifyConfig };
 
